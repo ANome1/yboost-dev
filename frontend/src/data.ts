@@ -12,12 +12,6 @@ export type Recipe = {
   votes: number
 }
 
-export type User = {
-  name: string
-  email: string
-  favoriteCountry: string
-}
-
 export const recipes: Recipe[] = [
   {
     id: 1,
