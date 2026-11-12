@@ -1,6 +1,6 @@
 # yboost — Backend API Recettes
 
-API FastAPI simple pour gérer des recettes du monde (stockage en mémoire).
+API FastAPI simple pour gérer des recettes du monde (stockage dans une base SQLite).
 
 ## Installation
 
@@ -21,6 +21,35 @@ uvicorn app.main:app --reload
 - API : http://localhost:8000
 - Docs interactives (Swagger) : http://localhost:8000/docs
 - Docs alternatives (ReDoc) : http://localhost:8000/redoc
+
+## Base de données
+
+Les recettes sont stockées dans un fichier SQLite, `backend/recettes.db` (module `sqlite3` de Python, une seule table `recettes`).
+Les listes `ingredients`, `etapes` et `tags` sont stockées en texte JSON.
+
+- Au premier démarrage, le fichier est créé et rempli avec les recettes de `app/data.py`.
+- Aux démarrages suivants, les données sont conservées et le remplissage n'est pas refait.
+- Pour repartir de zéro : arrêter l'API, supprimer `recettes.db`, puis relancer l'API.
+  (Les recettes ajoutées dans `app/data.py` n'apparaissent qu'avec une base neuve.)
+
+## Appeler l'API depuis Python
+
+`client.py` contient des fonctions simples basées sur `requests` : `lister_recettes(**filtres)`, `obtenir_recette(id)`, `creer_recette(recette)`, `modifier_recette(id, changements)`, `supprimer_recette(id)`.
+
+Avec l'API démarrée dans un autre terminal :
+
+```bash
+py client.py
+```
+
+Exemple dans un script :
+
+```python
+from client import lister_recettes
+
+for recette in lister_recettes(regime="végétarien"):
+    print(recette["titre"])
+```
 
 ## Endpoints
 
@@ -62,9 +91,12 @@ backend/
 │   ├── __init__.py
 │   ├── main.py          # FastAPI app + CORS
 │   ├── models.py        # Modèles Pydantic
-│   ├── data.py          # Recettes en mémoire
+│   ├── db.py            # Connexion SQLite, création et remplissage de la table
+│   ├── data.py          # Recettes de départ (copiées dans la base si elle est vide)
 │   └── api/
 │       ├── __init__.py
 │       └── recipes.py   # Routes /recettes
+├── client.py            # Exemples d'appels à l'API avec requests
+├── recettes.db          # Base SQLite (créée au démarrage, ignorée par git)
 └── requirements.txt
 ```
