@@ -1,3 +1,4 @@
+import unicodedata
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 
@@ -8,26 +9,49 @@ from app.data import RECETTES, prochain_id
 router = APIRouter(prefix="/recettes", tags=["recettes"])
 
 
+def normaliser(texte: str) -> str:
+    # minuscules + sans accents : "Pérou" -> "perou"
+    texte = unicodedata.normalize("NFD", texte.lower())
+    return "".join(c for c in texte if not unicodedata.combining(c))
+
+
 @router.get("", response_model=list[Recette])
 def lister_recettes(
     pays: Optional[str] = Query(None, description="Filtrer par pays"),
-    categorie: Optional[str] = Query(None, description="Filtrer par catégorie"),
-    difficulte: Optional[str] = Query(None, description="Filtrer par difficulté"),
-    recherche: Optional[str] = Query(None, description="Recherche dans le titre"),
+    categorie: Optional[str] = Query(None, description="entrée, plat, dessert ou boisson"),
+    difficulte: Optional[str] = Query(None, description="facile, moyen ou difficile"),
+    regime: Optional[str] = Query(None, description="Ex: végétarien, vegan, sans gluten"),
+    recherche: Optional[str] = Query(None, description="Recherche dans le titre, les ingrédients et le pays"),
 ):
     resultats = RECETTES
 
     if pays:
-        resultats = [r for r in resultats if r["pays"].lower() == pays.lower()]
+        resultats = [r for r in resultats if normaliser(r["pays"]) == normaliser(pays)]
     if categorie:
-        resultats = [r for r in resultats if r["categorie"].lower() == categorie.lower()]
+        resultats = [r for r in resultats if normaliser(r["categorie"]) == normaliser(categorie)]
     if difficulte:
-        resultats = [r for r in resultats if r["difficulte"].lower() == difficulte.lower()]
+        resultats = [r for r in resultats if normaliser(r["difficulte"]) == normaliser(difficulte)]
+    if regime:
+        resultats = [r for r in resultats if a_le_regime(r, regime)]
     if recherche:
-        terme = recherche.lower()
-        resultats = [r for r in resultats if terme in r["titre"].lower()]
+        terme = normaliser(recherche)
+        resultats = [r for r in resultats if terme in texte_recherche(r)]
 
     return resultats
+
+
+def texte_recherche(recette: dict) -> str:
+    noms_ingredients = " ".join(i["nom"] for i in recette["ingredients"])
+    return normaliser(recette["titre"] + " " + recette["pays"] + " " + noms_ingredients)
+
+
+def a_le_regime(recette: dict, regime: str) -> bool:
+    tags = [normaliser(t) for t in recette.get("tags", [])]
+    regime = normaliser(regime)
+    if regime in tags:
+        return True
+    # une recette vegan est aussi végétarienne
+    return regime == "vegetarien" and "vegan" in tags
 
 
 @router.get("/{recette_id}", response_model=Recette)

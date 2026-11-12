@@ -28,24 +28,31 @@ uvicorn app.main:app --reload
 |---------|--------------------------|----------------------------------------------|
 | GET     | `/`                      | Message d'accueil                            |
 | GET     | `/health`                | Statut du service                            |
-| GET     | `/recettes`              | Lister les recettes (filtres optionnels)     |
-| GET     | `/recettes/{id}`         | Obtenir une recette                          |
-| POST    | `/recettes`              | Créer une recette                            |
-| PUT     | `/recettes/{id}`         | Mettre à jour une recette                    |
-| DELETE  | `/recettes/{id}`         | Supprimer une recette                        |
+| GET     | `/recettes`              | Lister/rechercher les recettes (filtres)     |
+| GET     | `/recettes/{id}`         | Obtenir une recette (404 si inconnue)        |
+| POST    | `/recettes`              | Créer une recette (201, 422 si invalide)     |
+| PUT     | `/recettes/{id}`         | Mettre à jour une recette (champs partiels)  |
+| DELETE  | `/recettes/{id}`         | Supprimer une recette (204)                  |
 
 ### Filtres sur `GET /recettes`
 
-- `pays` — ex: `?pays=Italie`
-- `categorie` — `entrée` / `plat` / `dessert` / `boisson`
+Tous les filtres sont optionnels, combinables, et insensibles à la casse et aux accents.
+
+- `recherche` — texte cherché dans le titre, le nom des ingrédients et le pays (ex: `?recherche=perou`, `?recherche=pois chiches`)
+- `pays` — pays exact, ex: `?pays=Italie`
+- `categorie` — `entrée` / `plat` / `dessert` / `boisson` (`entree` fonctionne aussi)
 - `difficulte` — `facile` / `moyen` / `difficile`
-- `recherche` — recherche texte dans le titre
+- `regime` — cherche dans les `tags`, ex: `végétarien`, `vegan`, `sans gluten` (une recette vegan sort aussi pour `végétarien`)
 
 Exemple :
 
 ```
-GET /recettes?pays=Italie&categorie=dessert
+GET /recettes?regime=sans gluten&categorie=dessert
 ```
+
+### Création / modification
+
+`categorie` doit valoir `entrée`, `plat`, `dessert` ou `boisson`, et `difficulte` doit valoir `facile`, `moyen` ou `difficile`. Toute autre valeur renvoie une erreur 422.
 
 ## Structure
 
